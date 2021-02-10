@@ -6,29 +6,29 @@ moment.locale("pt-br");
 
 module.exports.run = async (client, message, args) => {
     
-    function parseMarkdown(markdownText) {
-        const htmlText = markdownText
-            .replace(/(```[a-z]*\n[\s\S]```)/g, `<br /><code class="pre--multiline">$1</code><br />`) // Bloco de codigo com multiplas linhas      
-            .replace(/^>([\s\S]*?)\n$/g, `<br /><span class="quote">$1</span><br />`)
-            .replace(/\*\*(.*)\*\*/gim, `<span class="markdown"><b>$1</b></span>`)         
-            .replace(/\*(.*)\*/gim, `<span><em>$1</em></span>`) 
-            .replace(/\~\~(.*)\~\~/gim, `<span><s>$1</s></span>`) 
-            .replace(/\_\_(.*)\_\_/gim, `<span><u>$1</u></span>`) // underline 
-            .replace(/(https?:\/\/[^\s]+)/g, "<a href='$1'>$1</a>") 
-            .replace(/(http?:\/\/[^\s]+)/g, "<a href='$1'>$1</a>")
-            .replace(/\n$/gim, '<br />') 
-            .replace(/\|\|(.*)\|\|/gim, `<span class="spoiler">$1</span>`) 
-            .replace(/\n/g, `<br />`) 
-        return htmlText.trim()
-    }
+    //function parseMarkdown(markdownText) {
+    //    const htmlText = markdownText
+    //        .replace(/(```[a-z]*\n[\s\S]```)/g, `<br /><code class="pre--multiline">$1</code><br />`) // Bloco de codigo com multiplas linhas      
+    //        .replace(/^>([\s\S]*?)\n$/g, `<br /><span class="quote">$1</span><br />`)
+    //        .replace(/\*\*(.*)\*\*/gim, `<span class="markdown"><b>$1</b></span>`)         
+    //        .replace(/\*(.*)\*/gim, `<span><em>$1</em></span>`) 
+    //        .replace(/\~\~(.*)\~\~/gim, `<span><s>$1</s></span>`) 
+    //        .replace(/\_\_(.*)\_\_/gim, `<span><u>$1</u></span>`) // underline 
+    //        .replace(/(https?:\/\/[^\s]+)/g, "<a href='$1'>$1</a>") 
+    //        .replace(/(http?:\/\/[^\s]+)/g, "<a href='$1'>$1</a>")
+    //        .replace(/\n$/gim, '<br />') 
+    //        .replace(/\|\|(.*)\|\|/gim, `<span class="spoiler">$1</span>`) 
+    //        .replace(/\n/g, `<br />`) 
+    //    return htmlText.trim()
+    //}
 
     function multiMessages (msgs, body) {
         let primaryMessage = msgs[0];
         let messageTime = moment(primaryMessage.createdTimestamp).format('LLL');
         let listChat = '';
 
-        msgs.forEach((dados, index) => {
-            let chat = parseMarkdown(dados.content);
+        msgs.forEach(async (dados, index) => {
+            let chat = dados.content;
             arrayMention = [];
 
             dados.mentions.users.forEach(mention => {
@@ -71,43 +71,81 @@ module.exports.run = async (client, message, args) => {
                 })
             }
 
+            var replyContent = ''
+            if (dados.reference != null) {
+                function getMessage() {
+                    return message.channel.messages.fetch(dados.reference.messageID)
+                    .then(function(m) {
+                        let replyUser = client.users.cache.get(m.author.id);
+                        let replyIcon = 'https://cdn.discordapp.com/embed/avatars/0.png';
+                        let replyAuthorName = 'Indefinido';
+                        let replyMessageContent = 'Clique para ver anexo'
+    
+                        if (replyUser) {
+                            replyIcon = replyUser.displayAvatarURL({ dynamic: true });
+                            replyAuthorName = replyUser.username;
+                        }
+    
+                        if (dados.content != '') {
+                            replyMessageContent = dados.content;
+                        }
 
+                        return `
+                            <div class="chatlog__reply-message">
+                                <img src="${replyIcon}" alt="" class="chatlog__reply-avatar">
+                                <span class="chatlog__author-name">${replyAuthorName}</span>
+                                    <div class="chatlog__replied-text-preview">
+                                        <div class="chatlog__replied-text-content">${replyMessageContent}</div>
+                                    </div>
+                            </div>
+                        `;
+                    })
+                    .catch(function(err) { return ''; });
+                }
+
+                replyContent = await getMessage();
+            }
+            
             if (index == 0) {
-                listChat = `
-                    <div class="chatlog__message-group group-start">
-                        <div class="chatlog__author-avatar-container">
-                            <img class=chatlog__author-avatar src="${primaryMessage.author.displayAvatarURL({ dynamic: true })}">
+                listChat = listChat + `
+                <div class="chatlog__message-group group-start">
+                    <div class="chatlog__author-avatar-container">
+                        <img class=chatlog__author-avatar src="${primaryMessage.author.displayAvatarURL({ dynamic: true })}">
+                    </div>
+                    ${replyContent}
+                    <div class="chatlog__messages">
+                        <span class="chatlog__author-name" title="${primaryMessage.author.tag}" data-user-id="${primaryMessage.author.id}">
+                            ${primaryMessage.author.username}
+                        </span>
+                        <span class="chatlog__timestamp">
+                            ${messageTime}
+                        </span>
+                        <div class="chatlog__content">
+                            ${chat}
                         </div>
-                        <div class="chatlog__messages">
-                            <span class="chatlog__author-name" title="${primaryMessage.author.tag}" data-user-id="${primaryMessage.author.id}">
-                                ${primaryMessage.author.username}
-                            </span>
-                            <span class="chatlog__timestamp">
-                                ${messageTime}
-                            </span>
-                            <div class="chatlog__content">
-                                ${chat}
-                            </div>
-                            <div class="chatlog__reactions">
-                                <div class="chatlog__reactions">${reactions}</div>
-                            </div>
+                        <div class="chatlog__reactions">
+                            <div class="chatlog__reactions">${reactions}</div>
                         </div>
-                    </div>                
+                    </div>
+                </div>                
                 `;
+                console.log(listChat)
             } else {
                 listChat = listChat + `
-                <div class="chatlog__message-group">
-                    <div class="chatlog__messages">
-                        <div class="chatlog__message" id="message-${dados.id}" data-message-id="${dados.id}">
-                            <span class="chatlog__timestamp compact-timestamp" title="${moment(dados.createdTimestamp).format('LLL')}">${moment(dados.createdTimestamp).format('LT')}</span>
-                            <div class="chatlog__content">${chat}</div>
-                            <div class="chatlog__reactions">
-                                <div class="chatlog__reactions">${reactions}</div>
+                    <div class="chatlog__message-group">
+                        ${replyContent}
+                        <div class="chatlog__messages">
+                            <div class="chatlog__message" id="message-${dados.id}" data-message-id="${dados.id}">
+                                <span class="chatlog__timestamp compact-timestamp" title="${moment(dados.createdTimestamp).format('LLL')}">${moment(dados.createdTimestamp).format('LT')}</span>
+                                <div class="chatlog__content">${chat}</div>
+                                <div class="chatlog__reactions">
+                                    <div class="chatlog__reactions">${reactions}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                `;                
+                `;
+                console.log(listChat)                            
             }
         });
 
@@ -127,7 +165,7 @@ module.exports.run = async (client, message, args) => {
         for(var mc = 0; mc < mf.length; mc++){
             if(list.length > 0){
                 if(list[list.length - 1].userID == mf[mc].author.id) {
-                    if (list[list.length -1].timestamp + 420000 < mf[mc].createdTimestamp) {
+                    if (list[list.length -1].timestamp + 420000 < mf[mc].createdTimestamp || mf[mc].reference != null) {
                         list.push({
                             userID: mf[mc].author.id,
                             indexes: [mf[mc]],
@@ -187,12 +225,12 @@ module.exports.run = async (client, message, args) => {
                         name: 'mensagens.html'
                     }]
                 })
-                .catch(err => console.log("a"))
+                .catch(err => console.error(err))
                 // message.channel.send("Arquivo gerado e enviado com sucesso");
 
-                fs.unlink('./transcript/' + message.channel.id + '.html', (err) => {
-                    if (err) return console.log("Não consegui bater á punheta");
-                });              
+                //fs.unlink('./transcript/' + message.channel.id + '.html', (err) => {
+                //    if (err) return console.log("Não consegui bater á punheta");
+                //});              
             });
         });
     })

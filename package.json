@@ -1,4 +1,13 @@
 {
+  "name": "site",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lusiny#1398 e zMatheusPro#2331",
+  "license": "ISC",
   "dependencies": {
     "discord.js": "^12.5.1",
     "moment": "^2.29.1",
