@@ -16,7 +16,7 @@ module.exports.run = async (client, message, args) => {
         let listChat = '';
         
         msgs.forEach(async (dados, index) => {
-            let chat = dados.content;
+            let chat = dados.content.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");;
             arrayMention = [];
 
             dados.mentions.users.forEach(mention => {
@@ -66,7 +66,9 @@ module.exports.run = async (client, message, args) => {
                 let replyID = 'Inválido';
                 let replyIcon = 'https://cdn.discordapp.com/embed/avatars/0.png';
                 let replyAuthorName = 'Indefinido';
-                let replyMessageContent = 'Clique para ver anexo'
+                
+                let svgIcon = `<svg class="repliedTextContentIcon-1ivTae" aria-hidden="false" width="20" height="20" viewBox="0 0 64 64"><path fill="currentColor" d="M56 50.6667V13.3333C56 10.4 53.6 8 50.6667 8H13.3333C10.4 8 8 10.4 8 13.3333V50.6667C8 53.6 10.4 56 13.3333 56H50.6667C53.6 56 56 53.6 56 50.6667ZM22.6667 36L29.3333 44.0267L38.6667 32L50.6667 48H13.3333L22.6667 36Z"></path></svg>`;
+                let replyMessageContent = 'Clique para ver anexo';
 
                 if (m != -1) {
                     let replyUser = client.users.cache.get(messages[m].author.id);
@@ -86,30 +88,44 @@ module.exports.run = async (client, message, args) => {
                     <div class="chatlog__reply-message">
                         <img src="${replyIcon}" alt="" class="chatlog__reply-avatar">
                         <span class="chatlog__author-name">${replyAuthorName}</span>
-                            <div class="chatlog__replied-text-preview">
-                                <div class="chatlog__replied-text-content">${replyMessageContent}</div>
-                            </div>
+                        <div class="chatlog__replied-text-preview">
+                            <div class="chatlog__replied-text-content"><em>${replyMessageContent}</em> </div>
+                        </div>
+                        ${svgIcon}
                     </div>
                 `;
             }
+
+            let attachments = "";
+            if (dados.attachments.size != 0) {
+                dados.attachments.forEach(attachment => {
+                    if (attachment.attachment.endsWith("mp3")) {
+
+                    }
+                    attachments = `<div class="chatlog__attachment"><a href="${attachment.attachment}"><img class="chatlog__attachment-thumbnail" src="${attachment.attachment}"></a></div>`;
+                })
+            }
+            let userBot = (primaryMessage.author.bot) ? `<span class="chatlog__bot-tag">BOT</span>` : "" ; 
             
             if (index == 0) {
                 listChat = listChat + `
                 <div class="chatlog__message-group group-start">
-                    <div class="chatlog__author-avatar-container">
-                        <img class=chatlog__author-avatar src="${primaryMessage.author.displayAvatarURL({ dynamic: true })}">
-                    </div>
                     ${replyContent}
                     <div class="chatlog__messages">
+                        <div class="chatlog__author-avatar-container">
+                            <img class=chatlog__author-avatar src="${primaryMessage.author.displayAvatarURL({ dynamic: true })}">
+                        </div>
                         <span class="chatlog__author-name" title="${primaryMessage.author.tag}" data-user-id="${primaryMessage.author.id}">
                             ${primaryMessage.author.username}
                         </span>
+                        ${userBot}
                         <span class="chatlog__timestamp">
                             ${messageTime}
                         </span>
                         <div class="chatlog__content">
                             ${chat}
                         </div>
+                            ${attachments}
                         <div class="chatlog__reactions">
                             <div class="chatlog__reactions">${reactions}</div>
                         </div>
@@ -124,6 +140,7 @@ module.exports.run = async (client, message, args) => {
                             <div class="chatlog__message" id="message-${dados.id}" data-message-id="${dados.id}">
                                 <span class="chatlog__timestamp compact-timestamp" title="${moment(dados.createdTimestamp).format('LLL')}">${moment(dados.createdTimestamp).format('LT')}</span>
                                 <div class="chatlog__content">${chat}</div>
+                                    ${attachments}
                                 <div class="chatlog__reactions">
                                     <div class="chatlog__reactions">${reactions}</div>
                                 </div>
