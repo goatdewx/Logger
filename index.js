@@ -19,4 +19,4 @@ fs.readdir('./eventos', (err, files) => {
 })
 
 client.login(config.TOKEN)
-.then(console.log("Liguei"))
+.then(console.log("O BOT foi ligado com sucesso!"))

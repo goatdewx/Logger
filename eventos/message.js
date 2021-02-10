@@ -6,8 +6,6 @@ const config = require("../config.json");
 module.exports = (client, message) => {
 	if (message.author.bot || message.channel.type == 'dm') return;
 
-	console.log(message)
-
 	if (message.content.indexOf(config.PREFIXO) != 0) return;
 
 	const args = message.content.slice(config.PREFIXO.length).trim().split(/ +/g);

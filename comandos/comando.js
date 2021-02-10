@@ -5,28 +5,16 @@ const moment = require("moment");
 moment.locale("pt-br");
 
 module.exports.run = async (client, message, args) => {
-    
-    //function parseMarkdown(markdownText) {
-    //    const htmlText = markdownText
-    //        .replace(/(```[a-z]*\n[\s\S]```)/g, `<br /><code class="pre--multiline">$1</code><br />`) // Bloco de codigo com multiplas linhas      
-    //        .replace(/^>([\s\S]*?)\n$/g, `<br /><span class="quote">$1</span><br />`)
-    //        .replace(/\*\*(.*)\*\*/gim, `<span class="markdown"><b>$1</b></span>`)         
-    //        .replace(/\*(.*)\*/gim, `<span><em>$1</em></span>`) 
-    //        .replace(/\~\~(.*)\~\~/gim, `<span><s>$1</s></span>`) 
-    //        .replace(/\_\_(.*)\_\_/gim, `<span><u>$1</u></span>`) // underline 
-    //        .replace(/(https?:\/\/[^\s]+)/g, "<a href='$1'>$1</a>") 
-    //        .replace(/(http?:\/\/[^\s]+)/g, "<a href='$1'>$1</a>")
-    //        .replace(/\n$/gim, '<br />') 
-    //        .replace(/\|\|(.*)\|\|/gim, `<span class="spoiler">$1</span>`) 
-    //        .replace(/\n/g, `<br />`) 
-    //    return htmlText.trim()
-    //}
+
+    message.delete();
+
+    let messages = [];
 
     function multiMessages (msgs, body) {
         let primaryMessage = msgs[0];
         let messageTime = moment(primaryMessage.createdTimestamp).format('LLL');
         let listChat = '';
-
+        
         msgs.forEach(async (dados, index) => {
             let chat = dados.content;
             arrayMention = [];
@@ -71,39 +59,38 @@ module.exports.run = async (client, message, args) => {
                 })
             }
 
-            var replyContent = ''
+            let replyContent = ''
             if (dados.reference != null) {
-                function getMessage() {
-                    return message.channel.messages.fetch(dados.reference.messageID)
-                    .then(function(m) {
-                        let replyUser = client.users.cache.get(m.author.id);
-                        let replyIcon = 'https://cdn.discordapp.com/embed/avatars/0.png';
-                        let replyAuthorName = 'Indefinido';
-                        let replyMessageContent = 'Clique para ver anexo'
-    
-                        if (replyUser) {
-                            replyIcon = replyUser.displayAvatarURL({ dynamic: true });
-                            replyAuthorName = replyUser.username;
-                        }
-    
-                        if (dados.content != '') {
-                            replyMessageContent = dados.content;
-                        }
+                let m = messages.map(function (m) { return m.id; }).indexOf(dados.reference.messageID)
 
-                        return `
-                            <div class="chatlog__reply-message">
-                                <img src="${replyIcon}" alt="" class="chatlog__reply-avatar">
-                                <span class="chatlog__author-name">${replyAuthorName}</span>
-                                    <div class="chatlog__replied-text-preview">
-                                        <div class="chatlog__replied-text-content">${replyMessageContent}</div>
-                                    </div>
-                            </div>
-                        `;
-                    })
-                    .catch(function(err) { return ''; });
+                let replyID = 'Inválido';
+                let replyIcon = 'https://cdn.discordapp.com/embed/avatars/0.png';
+                let replyAuthorName = 'Indefinido';
+                let replyMessageContent = 'Clique para ver anexo'
+
+                if (m != -1) {
+                    let replyUser = client.users.cache.get(messages[m].author.id);
+                    replyID = messages[m].id;
+                    
+                    if (replyUser) {
+                        replyIcon = replyUser.displayAvatarURL({ dynamic: true });
+                        replyAuthorName = replyUser.username;
+                    }
+                
+                    if (messages[m].content != '') {
+                        replyMessageContent = messages[m].content;
+                    }
                 }
 
-                replyContent = await getMessage();
+                replyContent =  `
+                    <div class="chatlog__reply-message">
+                        <img src="${replyIcon}" alt="" class="chatlog__reply-avatar">
+                        <span class="chatlog__author-name">${replyAuthorName}</span>
+                            <div class="chatlog__replied-text-preview">
+                                <div class="chatlog__replied-text-content">${replyMessageContent}</div>
+                            </div>
+                    </div>
+                `;
             }
             
             if (index == 0) {
@@ -129,7 +116,6 @@ module.exports.run = async (client, message, args) => {
                     </div>
                 </div>                
                 `;
-                console.log(listChat)
             } else {
                 listChat = listChat + `
                     <div class="chatlog__message-group">
@@ -144,8 +130,7 @@ module.exports.run = async (client, message, args) => {
                             </div>
                         </div>
                     </div>
-                `;
-                console.log(listChat)                            
+                `;                          
             }
         });
 
@@ -157,8 +142,9 @@ module.exports.run = async (client, message, args) => {
     .then(msg => {
         let mf = [];
 
-        [...msg].reverse().forEach(dado=>{
+        [...msg].reverse().forEach(dado => {
             mf.push(dado[1]);
+            messages.push(dado[1])
         });
 
         let list = [];
@@ -216,10 +202,10 @@ module.exports.run = async (client, message, args) => {
             .replace('{{messages.size}}', msg.size)
             .replace('{{body}}', body);
 
-            fs.appendFile('./transcript/' + message.channel.id + '.html', data, (err) => {
+            fs.appendFile('./transcript/' + message.channel.id + '.html', data, async (err) => {
                 if (err) return console.error(err);
 
-                message.channel.send({
+                await message.channel.send({
                     files: [{
                         attachment: './transcript/' + message.channel.id + '.html',
                         name: 'mensagens.html'
@@ -228,9 +214,9 @@ module.exports.run = async (client, message, args) => {
                 .catch(err => console.error(err))
                 // message.channel.send("Arquivo gerado e enviado com sucesso");
 
-                //fs.unlink('./transcript/' + message.channel.id + '.html', (err) => {
-                //    if (err) return console.log("Não consegui bater á punheta");
-                //});              
+                fs.unlink('./transcript/' + message.channel.id + '.html', (err) => {
+                    if (err) return console.log("Não consegui bater á punheta");
+                });              
             });
         });
     })
