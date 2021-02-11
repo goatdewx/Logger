@@ -3,6 +3,7 @@
     <head>
         <title>{{title}}</title>
         <meta charset="utf-8" />
+        <link rel="shortcut icon" href="{{guild.icon}}" type="image/x-icon">
         <meta name="viewport" content="width=device-width" />
         <style>
             @font-face {
@@ -165,6 +166,9 @@
                 padding-right: 48px;
                 padding-top: .125rem;
                 padding-bottom: .125rem;
+                transition: background 1.5s linear;
+                -webkit-transition: background 1.5s linear;
+                -moz-transition: background 1.5s linear;
             }
     
             .chatlog__message-group.group-start {
@@ -645,5 +649,24 @@
         <div class="chatlog">
             {{body}}
         </div>
+        <div id="scroll"></div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script>
+        $(document).ready(function(){
+            var objDiv = document.getElementById("scroll");
+            objDiv.scrollTop = objDiv.scrollHeight;
+
+            $(".replyFocus").click(function() {
+                let id = $(this).attr("reply-id");
+                $('html, body').animate({
+                    scrollTop: $(`#message-${id}`).offset().top
+                }, 500); 
+                $(`#message-${id}`).css('background', '#7289da').fadeIn(500);
+                setTimeout(function() { 
+                    $(`#message-${id}`).css('background', '#36393e').fadeIn(700);
+                }, 500);
+            });
+        });
+        </script>
     </body>
 </html>

@@ -16,11 +16,11 @@ module.exports.run = async (client, message, args) => {
         let listChat = '';
         
         msgs.forEach(async (dados, index) => {
-            let chat = dados.content.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");;
+            let chat = dados.content;
             arrayMention = [];
 
             dados.mentions.users.forEach(mention => {
-                chat = chat.replaceAll("<@!"+mention.id+">", `<span class="mention" title="${mention.tag}">@${mention.username}</span>`);
+                chat = chat.replaceAll("<@!"+mention.id+">", `<span class="mention" title='${mention.tag}'>@${mention.username}</span>`);
             });
 
             message.guild.emojis.cache.forEach(emoji => {
@@ -59,6 +59,8 @@ module.exports.run = async (client, message, args) => {
                 })
             }
 
+            // chat.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+
             let replyContent = ''
             if (dados.reference != null) {
                 let m = messages.map(function (m) { return m.id; }).indexOf(dados.reference.messageID)
@@ -68,7 +70,7 @@ module.exports.run = async (client, message, args) => {
                 let replyAuthorName = 'Indefinido';
                 
                 let svgIcon = `<svg class="repliedTextContentIcon-1ivTae" aria-hidden="false" width="20" height="20" viewBox="0 0 64 64"><path fill="currentColor" d="M56 50.6667V13.3333C56 10.4 53.6 8 50.6667 8H13.3333C10.4 8 8 10.4 8 13.3333V50.6667C8 53.6 10.4 56 13.3333 56H50.6667C53.6 56 56 53.6 56 50.6667ZM22.6667 36L29.3333 44.0267L38.6667 32L50.6667 48H13.3333L22.6667 36Z"></path></svg>`;
-                let replyMessageContent = 'Clique para ver anexo';
+                let replyMessageContent = '<em>Clique para ver anexo</em>';
 
                 if (m != -1) {
                     let replyUser = client.users.cache.get(messages[m].author.id);
@@ -81,6 +83,10 @@ module.exports.run = async (client, message, args) => {
                 
                     if (messages[m].content != '') {
                         replyMessageContent = messages[m].content;
+                        messages[m].mentions.users.forEach(mention => {
+                            replyMessageContent = replyMessageContent.replaceAll("<@!"+mention.id+">", `<span class="mention" title='${mention.tag}'>@${mention.username}</span>`);
+                        });
+                        svgIcon = '';
                     }
                 }
 
@@ -88,8 +94,8 @@ module.exports.run = async (client, message, args) => {
                     <div class="chatlog__reply-message">
                         <img src="${replyIcon}" alt="" class="chatlog__reply-avatar">
                         <span class="chatlog__author-name">${replyAuthorName}</span>
-                        <div class="chatlog__replied-text-preview">
-                            <div class="chatlog__replied-text-content"><em>${replyMessageContent}</em> </div>
+                        <div class="chatlog__replied-text-preview replyFocus" reply-id="${replyID}">
+                            <div class="chatlog__replied-text-content">${replyMessageContent} </div>
                         </div>
                         ${svgIcon}
                     </div>
@@ -109,7 +115,7 @@ module.exports.run = async (client, message, args) => {
             
             if (index == 0) {
                 listChat = listChat + `
-                <div class="chatlog__message-group group-start">
+                <div class="chatlog__message-group group-start" id="message-${dados.id}" data-message-id="${dados.id}">
                     ${replyContent}
                     <div class="chatlog__messages">
                         <div class="chatlog__author-avatar-container">
@@ -134,10 +140,9 @@ module.exports.run = async (client, message, args) => {
                 `;
             } else {
                 listChat = listChat + `
-                    <div class="chatlog__message-group">
-                        ${replyContent}
+                    <div class="chatlog__message-group" id="message-${dados.id}" data-message-id="${dados.id}">
                         <div class="chatlog__messages">
-                            <div class="chatlog__message" id="message-${dados.id}" data-message-id="${dados.id}">
+                            <div class="chatlog__message">
                                 <span class="chatlog__timestamp compact-timestamp" title="${moment(dados.createdTimestamp).format('LLL')}">${moment(dados.createdTimestamp).format('LT')}</span>
                                 <div class="chatlog__content">${chat}</div>
                                     ${attachments}
@@ -215,7 +220,7 @@ module.exports.run = async (client, message, args) => {
             .replace('{{title}}', message.guild.name + ' | ' + message.channel.name)
             .replace('{{guild.name}}', message.guild.name)
             .replace('{{channel.name}}', message.channel.name)
-            .replace('{{guild.icon}}', icon)
+            .replaceAll('{{guild.icon}}', icon)
             .replace('{{messages.size}}', msg.size)
             .replace('{{body}}', body);
 
