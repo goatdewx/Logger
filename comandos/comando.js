@@ -2,6 +2,7 @@ const Discord = require("discord.js");
 const twemoji = require("twemoji");
 const fs = require("fs");
 const moment = require("moment");
+const { title } = require("process");
 moment.locale("pt-br");
 
 module.exports.run = async (client, message, args) => {
@@ -20,14 +21,14 @@ module.exports.run = async (client, message, args) => {
             arrayMention = [];
 
             dados.mentions.users.forEach(mention => {
-                chat = chat.replaceAll("<@!"+mention.id+">", `<span class="mention" title='${mention.tag}'>@${mention.username}</span>`);
+                chat = chat.replaceAll("<@!" + mention.id + ">", `<span class="mention" title='${mention.tag}'>@${mention.username}</span>`);
             });
 
             message.guild.emojis.cache.forEach(emoji => {
                 if (emoji.animated == true) {
-                    chat = chat.replaceAll('<a:' + message.guild.emojis.resolveIdentifier(emoji) + '>', `<img class="emoji--large" src=${emoji.url}>`);
+                    chat = chat.replaceAll('<a:' + emoji.identifier + '>', `<img class="emoji--large" src=${emoji.url}>`);
                 } else {
-                    chat = chat.replaceAll('<:' + message.guild.emojis.resolveIdentifier(emoji) + '>', `<img class="emoji--large" src=${emoji.url}>`);
+                    chat = chat.replaceAll('<:' + emoji.identifier + '>', `<img class="emoji--large" src=${emoji.url}>`);
                 }
             })
 
@@ -59,9 +60,8 @@ module.exports.run = async (client, message, args) => {
                 })
             }
 
-            // chat.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-
-            let replyContent = ''
+            let replyContent = '';
+            let replyBOT = "";
             if (dados.reference != null) {
                 let m = messages.map(function (m) { return m.id; }).indexOf(dados.reference.messageID)
 
@@ -79,6 +79,7 @@ module.exports.run = async (client, message, args) => {
                     if (replyUser) {
                         replyIcon = replyUser.displayAvatarURL({ dynamic: true });
                         replyAuthorName = replyUser.username;
+                        if (replyUser.bot) replyBOT = `<span class="chatlog__bot-tag">BOT</span>`;
                     }
                 
                     if (messages[m].content != '') {
@@ -93,7 +94,8 @@ module.exports.run = async (client, message, args) => {
                 replyContent =  `
                     <div class="chatlog__reply-message">
                         <img src="${replyIcon}" alt="" class="chatlog__reply-avatar">
-                        <span class="chatlog__author-name">${replyAuthorName}</span>
+                        ${replyBOT}
+                        <span class="chatlog__author-name"> ${replyAuthorName}</span>
                         <div class="chatlog__replied-text-preview replyFocus" reply-id="${replyID}">
                             <div class="chatlog__replied-text-content">${replyMessageContent} </div>
                         </div>
@@ -105,12 +107,200 @@ module.exports.run = async (client, message, args) => {
             let attachments = "";
             if (dados.attachments.size != 0) {
                 dados.attachments.forEach(attachment => {
-                    if (attachment.attachment.endsWith("mp3")) {
-
-                    }
                     attachments = `<div class="chatlog__attachment"><a href="${attachment.attachment}"><img class="chatlog__attachment-thumbnail" src="${attachment.attachment}"></a></div>`;
                 })
             }
+            let embeds = "";
+            if (dados.embeds[0]) {
+                dados.embeds.filter(embed => embed.type == "rich")
+                .forEach(embed => {
+                    let footer = "", footerText = "", color = "", thumbnail = "", author = "", embedTitle = "", description = "", fields = "", image = "";
+
+                    if (embed.footer) {
+                        footerText = embed.footer.text;
+                        footerText = twemoji.parse(footerText, {
+                            ext: '.png',
+                            className: "emoji"
+                        });
+
+                        let footerIcon = embed.footer.iconURL;
+                        if (footerIcon) {
+                            footer = `
+                            <div class="chatlog__embed-footer">
+                                <img class="chatlog__embed-footer-icon" src=${footerIcon}>
+                                <span class="chatlog__embed-footer-text">${footerText}</span>
+                            </div>
+                            `;
+                        } else {
+                            footer = `
+                            <div class="chatlog__embed-footer">
+                                <span class="chatlog__embed-footer-text">${footerText}</span>
+                            </div>
+                            `;
+                        }
+                    }
+
+                    if (embed.thumbnail) {
+                        thumbnail = `
+                        <div class="chatlog__embed-thumbnail-container">
+                            <a class="chatlog__embed-thumbnail-link">
+                                <img class="chatlog__embed-thumbnail" src="${embed.thumbnail.url}" />
+                            </a>
+                        </div>                        
+                        `;
+                    }
+
+                    if (embed.image) {
+                        image = `
+                        <div class="chatlog__embed-image-container">
+                            <img class="chatlog__embed-image" src="${embed.image.url}" />
+                        </div>
+                        `;
+                    }
+
+                    if (embed.author) {
+                        let authorIcon = "", authorURL = embed.author.url || "", authorName = embed.author.name;
+                        authorName = twemoji.parse(authorName, {
+                            ext: '.png',
+                            className: "emoji"
+                        });                        
+
+                        if (embed.author.iconURL) {
+                            authorIcon = `
+                                <img class="chatlog__embed-author-icon" src="${embed.author.iconURL}">
+                            `;
+                        }
+
+                        author = `
+                        <div class="chatlog__embed-author">
+                            ${authorIcon}
+                            <div class="chatlog__embed-author-name">
+                                <span class="markdown"><a class="" href="${authorURL}">${authorName}</a></span>
+                            </div>
+                        </div>
+                        `;
+                    }
+
+                    if (embed.title) {
+                        let titleurl = "", titleContent = embed.title;
+                        if (embed.url) titleContent = `<a class="" href="${embed.url}">${titleContent}</a>`;
+
+                        embedTitle = `
+                        <div class="chatlog__embed-title">
+                            <span class="markdown">${titleContent}</span>
+                        </div>
+                        `;
+                    }
+
+                    if (embed.description) {
+                        let embedDescription = embed.description;
+                        embedDescription = twemoji.parse(embedDescription, {
+                            ext: '.png',
+                            className: "emoji"
+                        });
+
+                        /*
+                            Markdown
+                        */
+
+                        message.guild.emojis.cache.forEach(emoji => {
+                            if (emoji.animated == true) {
+                                embedDescription = embedDescription.replaceAll('<a:' + emoji.identifier + '>', `<img class="emoji--small" src=${emoji.url}>`);
+                            } else {
+                                embedDescription = embedDescription.replaceAll('<:' + emoji.identifier + '>', `<img class="emoji--small" src=${emoji.url}>`);
+                            }
+                        });
+
+                        description = `
+                        <div class="chatlog__embed-description">
+                            <span class="markdown">${embedDescription}</span>
+                        </div>
+                        `;
+                    }
+
+                    if (embed.fields[0]) {
+                        embed.fields.forEach(field => {
+                            let fieldName = field.name, fieldValue = field.value;
+
+                            fieldName = twemoji.parse(fieldName, {
+                                ext: '.png',
+                                className: "emoji"
+                            });
+
+                            fieldValue = twemoji.parse(fieldValue, {
+                                ext: '.png',
+                                className: "emoji"
+                            });    
+
+                            /*
+                                Markdown para o value
+                            */
+    
+                            message.guild.emojis.cache.forEach(emoji => {
+                                if (emoji.animated == true) {
+                                    fieldValue = fieldValue.replaceAll('<a:' + emoji.identifier + '>', `<img class="emoji--small" src=${emoji.url}>`);
+                                    fieldName = fieldName.replaceAll('<a:' + emoji.identifier + '>', `<img class="emoji--small" src=${emoji.url}>`);
+                                } else {
+                                    fieldValue = fieldValue.replaceAll('<:' + emoji.identifier + '>', `<img class="emoji--small" src=${emoji.url}>`);
+                                    fieldName = fieldName.replaceAll('<:' + emoji.identifier + '>', `<img class="emoji--small" src=${emoji.url}>`);
+                                }
+                            });
+
+
+                            let fieldContent = `
+                            <div class="chatlog__embed-field-name">
+                                <span class="markdown">${fieldName}</span>
+                            </div>
+                            <div class="chatlog__embed-field-value">
+                                <span class="markdown">${fieldValue}</span>
+                            </div>                            
+                            `;
+
+                            if (field.inline == true) {
+                                fieldContent = `
+                                <div class="chatlog__embed-field chatlog__embed-field--inline">
+                                    ${fieldContent}
+                                </div>                                
+                                `;
+                            } else {
+                                fieldContent = `
+                                <div class="chatlog__embed-field chatlog__embed-field">
+                                    ${fieldContent}
+                                </div>                                
+                                `;
+                            }
+
+                            fields += fieldContent;
+                        })
+                    }
+
+                    color = `
+                        <div class="chatlog__embed-color-pill" style="background-color: ${embed.hexColor};"></div>
+                    `;
+
+                    embeds += `
+                    <div class="chatlog__embed">
+                        ${color}
+                        <div class="chatlog__embed-content-container">
+                            <div class="chatlog__embed-content">
+                                <div class="chatlog__embed-text">
+                                    ${author}
+                                    ${embedTitle}
+                                    ${description}
+                                    <div class="chatlog__embed-fields">
+                                        ${fields}
+                                    </div>
+                                </div>
+                                ${thumbnail}
+                            </div>
+                            ${image}
+                            ${footer}
+                        </div>
+                    </div>
+                    `
+                })
+            }
+
             let userBot = (primaryMessage.author.bot) ? `<span class="chatlog__bot-tag">BOT</span>` : "" ; 
             
             if (index == 0) {
@@ -131,6 +321,7 @@ module.exports.run = async (client, message, args) => {
                         <div class="chatlog__content">
                             ${chat}
                         </div>
+                            ${embeds}
                             ${attachments}
                         <div class="chatlog__reactions">
                             <div class="chatlog__reactions">${reactions}</div>
@@ -145,6 +336,7 @@ module.exports.run = async (client, message, args) => {
                             <div class="chatlog__message">
                                 <span class="chatlog__timestamp compact-timestamp" title="${moment(dados.createdTimestamp).format('LLL')}">${moment(dados.createdTimestamp).format('LT')}</span>
                                 <div class="chatlog__content">${chat}</div>
+                                    ${embeds}
                                     ${attachments}
                                 <div class="chatlog__reactions">
                                     <div class="chatlog__reactions">${reactions}</div>
@@ -166,7 +358,7 @@ module.exports.run = async (client, message, args) => {
 
         [...msg].reverse().forEach(dado => {
             mf.push(dado[1]);
-            messages.push(dado[1])
+            messages.push(dado[1]);
         });
 
         let list = [];
@@ -214,7 +406,7 @@ module.exports.run = async (client, message, args) => {
             if (err) return console.error(err);
 
             let icon = 'https://cdn.discordapp.com/embed/avatars/0.png';
-            if (message.guild.icon) icon = message.guild.iconURL({ dynamic: true })
+            if (message.guild.icon) icon = message.guild.iconURL({ dynamic: true });
 
             data = data.toString()
             .replace('{{title}}', message.guild.name + ' | ' + message.channel.name)
@@ -227,13 +419,13 @@ module.exports.run = async (client, message, args) => {
             fs.appendFile('./transcript/' + message.channel.id + '.html', data, async (err) => {
                 if (err) return console.error(err);
 
-                await message.channel.send({
+                await message.channel.send({ 
                     files: [{
                         attachment: './transcript/' + message.channel.id + '.html',
                         name: 'mensagens.html'
                     }]
                 })
-                .catch(err => console.error(err))
+                .catch(err => console.error(err));
                 // message.channel.send("Arquivo gerado e enviado com sucesso");
 
                 fs.unlink('./transcript/' + message.channel.id + '.html', (err) => {
@@ -241,14 +433,14 @@ module.exports.run = async (client, message, args) => {
                 });              
             });
         });
-    })
+    });
     
 }
 
 module.exports.config = {
     name: 'comando',
     description: 'Usado para comer casadas',
-    aliases: [],
+    aliases: ["cmd"],
     permissions: ["MANAGE_MESSAGES"],
     category: 'util',
     usage: []

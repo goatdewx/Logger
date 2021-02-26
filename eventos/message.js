@@ -17,9 +17,8 @@ module.exports = (client, message) => {
 		files.forEach(file => {
 			const pull = require('../comandos/' + file);
 
-			if (pull.config.name != command) return;
+			if (pull.config.name != command && pull.config.aliases.indexOf(command) == -1) return;
 			if (!message.member.hasPermission(pull.config.permissions)) return;
-
 			
 			pull.run(client, message, args);
 		})
