@@ -21,7 +21,7 @@ module.exports.run = async (client, message, args) => {
             arrayMention = [];
 
             dados.mentions.users.forEach(mention => {
-                chat = chat.replaceAll("<@!" + mention.id + ">", `<span class="mention" title='${mention.tag}'>@${mention.username}</span>`);
+                chat = chat.replace(/"<@!" + mention.id + ">"/g, `<span class="mention" title='${mention.tag}'>@${mention.username}</span>`);
             });
 
             message.guild.emojis.cache.forEach(emoji => {
@@ -412,7 +412,7 @@ module.exports.run = async (client, message, args) => {
             .replace('{{title}}', message.guild.name + ' | ' + message.channel.name)
             .replace('{{guild.name}}', message.guild.name)
             .replace('{{channel.name}}', message.channel.name)
-            .replaceAll('{{guild.icon}}', icon)
+            .replace(/"{{guild.icon}}"/g, icon)
             .replace('{{messages.size}}', msg.size)
             .replace('{{body}}', body);
 
